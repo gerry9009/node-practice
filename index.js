@@ -1,38 +1,57 @@
 const http = require("http");
 const fs = require("fs");
 
-const { add, extraction } = require("./calc.js");
-
-const x = add(10, 5);
-const y = extraction(10, 5);
-
-const port = 8080;
-
 const server = http.createServer((req, res) => {
-  res.setHeader("content-type", "text/html; charset=utf-8");
-
   switch (true) {
     case req.url === "/" && req.method === "GET":
-      // fs.readFile( filename, encoding, callback_function )
-      // read the file
-      fs.readFile(__dirname + "/pages/index.html", (err, data) => {
+      fs.readFile(__dirname + "/views/home.html", (err, data) => {
+        res.setHeader("content-type", "text/html");
         res.writeHead(200);
         res.end(data);
+      });
+      break;
+    case req.url === "/script.js" && req.method === "GET":
+      fs.readFile(__dirname + "/public/script.js", (err, data) => {
+        res.setHeader("content-type", "application/javascript");
+        res.end(data);
+      });
+      break;
+    case req.url === "/phones" && req.method === "GET":
+      fs.readFile(__dirname + "/phone.json", (err, data) => {
+        res.setHeader("content-type", "application/json");
+        res.writeHead(200);
+        res.end(data);
+      });
+      break;
+    case req.url === "/phones" && req.method === "POST":
+      let body = "";
+
+      req.on("data", (chunk) => {
+        body += chunk.toString();
       });
 
-      break;
-    case req.url === "/login" && req.method === "GET":
-      fs.readFile(__dirname + "/pages/login.html", (err, data) => {
-        res.writeHead(200);
-        res.end(data);
+      req.on("end", () => {
+        let newPhone = JSON.parse(body);
+
+        fs.readFile(__dirname + "/phone.json", (err, data) => {
+          const phones = JSON.parse(data);
+          phones.push(newPhone);
+
+          fs.writeFile(
+            __dirname + "/phone.json",
+            JSON.stringify(phones),
+            () => {
+              res.end(JSON.stringify(newPhone));
+            }
+          );
+        });
       });
       break;
+
     default:
-      fs.readFile(__dirname + "/pages/404.html", (err, data) => {
-        res.writeHead(404);
-        res.end(data);
-      });
+      res.writeHead(404);
+      res.end("Something went wrong");
   }
 });
 
-server.listen(port, () => console.log(`Server is running on ${port}`));
+server.listen(8080, () => console.log("Server is running on 8080 port"));
